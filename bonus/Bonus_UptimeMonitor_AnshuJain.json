@@ -12,7 +12,7 @@
           ]
         }
       },
-      "id": "af98176a-1745-56cc-a45d-cd972f66bbcc",
+      "id": "ca674f14-d694-4515-bb7f-0007d536aa68",
       "name": "Every 5 Minutes",
       "type": "n8n-nodes-base.scheduleTrigger",
       "typeVersion": 1.2,
@@ -25,7 +25,7 @@
       "parameters": {
         "jsCode": "// the task 1 app, frontend + api\nreturn [\n  { name: 'Conduit frontend', url: 'https://demo.realworld.show/' },\n  { name: 'Conduit API',      url: 'https://api.realworld.show/api/tags' },\n].map(t => ({ json: t }));"
       },
-      "id": "05edea31-3918-59b8-a16a-169503d0ce45",
+      "id": "fb32a5aa-1bcd-4215-a106-6dd64546b6fc",
       "name": "Targets",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -38,7 +38,7 @@
       "parameters": {
         "options": {}
       },
-      "id": "c34885bf-3ec9-50cf-a1f8-75b3f59da442",
+      "id": "977e2052-92f0-471d-9872-a90bd28cf28b",
       "name": "Loop Over Targets",
       "type": "n8n-nodes-base.splitInBatches",
       "typeVersion": 3,
@@ -52,7 +52,7 @@
         "assignments": {
           "assignments": [
             {
-              "id": "s1",
+              "id": "6e9b6251-d570-403f-9512-8e497670452d",
               "name": "startedAt",
               "type": "number",
               "value": "={{ Date.now() }}"
@@ -62,7 +62,7 @@
         "includeOtherFields": true,
         "options": {}
       },
-      "id": "d6d6e4a2-f670-5729-a939-d46771ec0d92",
+      "id": "fff7013c-843f-48c2-b5c7-a982cb74e971",
       "name": "Start Timer",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
@@ -86,7 +86,7 @@
           }
         }
       },
-      "id": "1812e42b-1956-56ca-861d-cab69ec6985a",
+      "id": "ab8c022d-d3b6-475a-920f-d36bed2ad1bd",
       "name": "HTTP: Ping",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -100,7 +100,7 @@
       "parameters": {
         "jsCode": "// runs once per target inside the loop so the timing is per request\nconst t = $('Start Timer').first().json;\nconst r = $input.first().json;\nreturn [{ json: {\n  name: t.name, url: t.url,\n  status: r.statusCode ?? (r.error ? 0 : 200),   // 0 = network error / timeout\n  ms: Date.now() - t.startedAt,\n  error: r.error ? (r.error.message || String(r.error)).slice(0, 200) : null,\n} }];"
       },
-      "id": "30a80c17-711b-59f6-ab0b-8bcabc48dfd0",
+      "id": "ffbcae2c-d458-4844-acd2-2dc15fa317ba",
       "name": "Measure",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -113,7 +113,7 @@
       "parameters": {
         "jsCode": "// save counts in static data for the daily summary\nconst SLOW_MS = 3000;\nconst stats = $getWorkflowStaticData('global');\nstats.day = stats.day || { since: new Date().toISOString(), checks: {} };\n\nreturn $input.all().map(item => {\n  const t = item.json;\n  const { status, ms } = t;\n  const ok = status === 200;\n  const s = stats.day.checks[t.name] = stats.day.checks[t.name] || { total: 0, failed: 0, slow: 0, sumMs: 0, maxMs: 0 };\n  s.total++; s.sumMs += ms; s.maxMs = Math.max(s.maxMs, ms);\n  if (!ok) s.failed++;\n  if (ms > SLOW_MS) s.slow++;\n  return { json: { ...t, ok, slow: ms > SLOW_MS } };\n});"
       },
-      "id": "f4e3f848-cb67-52cf-83db-edaf0cdd7835",
+      "id": "018fa728-2c1f-4651-bae4-62b52145bebd",
       "name": "Evaluate & Record",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -133,7 +133,7 @@
           },
           "conditions": [
             {
-              "id": "u1",
+              "id": "e219139f-63a1-419a-ab60-1cc6633877fe",
               "leftValue": "={{ $json.ok }}",
               "rightValue": "",
               "operator": {
@@ -147,7 +147,7 @@
         },
         "options": {}
       },
-      "id": "9aa33fd0-8b57-5dbd-822a-d8c99be20195",
+      "id": "9846a04b-f72b-440d-bd6f-fb6e2a4003ee",
       "name": "Status is 200?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
@@ -160,7 +160,7 @@
       "parameters": {
         "jsCode": "// only send 'recovered' if we alerted about it being down before\nconst state = $getWorkflowStaticData('global');\nstate.down = state.down || {};\nconst out = [];\nfor (const { json: c } of $input.all()) {\n  if (state.down[c.name]) {\n    const mins = Math.round((Date.now() - state.down[c.name]) / 60000);\n    delete state.down[c.name];\n    out.push({ json: { content: `✅ **RECOVERED:** ${c.name} is back (HTTP ${c.status}, ${c.ms} ms) after ~${mins} min down.\\n<${c.url}>` } });\n  }\n}\nreturn out;"
       },
-      "id": "c0a02d2b-c153-5a70-abe8-f3d4485e7db6",
+      "id": "1c6fbf41-bdfa-4483-bb4d-1f1c0338d1c2",
       "name": "Check Recovery",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -173,7 +173,7 @@
       "parameters": {
         "amount": 30
       },
-      "id": "4b04f5e9-7270-5903-b27d-c692914476b8",
+      "id": "d011d528-a5cc-4e31-a229-7cd5980c4de8",
       "name": "Wait 30s",
       "type": "n8n-nodes-base.wait",
       "typeVersion": 1.1,
@@ -197,7 +197,7 @@
           }
         }
       },
-      "id": "1e479987-4eb4-5fc9-8074-75b3ff69d3ab",
+      "id": "a7b27ab7-a11b-42e7-947f-6ddc7f5fb17d",
       "name": "HTTP: Re-check",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -211,7 +211,7 @@
       "parameters": {
         "jsCode": "// second check, 30s later. only alert if still down and we haven't alerted already\nconst state = $getWorkflowStaticData('global');\nstate.down = state.down || {};\nconst first = $('Wait 30s').all();\nconst out = [];\n$input.all().forEach((item, i) => {\n  const f = first[i].json;\n  const r = item.json;\n  const status = r.statusCode ?? (r.error ? 0 : 200);\n  if (status === 200) return;                 // transient blip, recovered on retry\n  if (state.down[f.name]) return;             // already alerted for this outage\n  state.down[f.name] = Date.now();\n  const why = status === 0 ? `no response (${(r.error?.message || 'timeout/network error').slice(0, 120)})` : `HTTP ${status}`;\n  out.push({ json: { content: `🔴 **DOWN:** ${f.name} returned ${why} on 2 checks, 30 s apart.\\nFirst check: HTTP ${f.status} in ${f.ms} ms · <${f.url}>` } });\n});\nreturn out;"
       },
-      "id": "b5d17f6e-9770-5e43-afaa-a4fa00c20c29",
+      "id": "ef8d1568-c985-4e12-afea-bb452375c542",
       "name": "Confirm Still Down",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -227,7 +227,7 @@
         "content": "={{ $json.content }}",
         "options": {}
       },
-      "id": "e6334bb0-7fbc-527f-8d4d-fff9c3a1d040",
+      "id": "a5c53809-109d-49e4-9aaf-1f809f8a99b8",
       "name": "Discord: Alert",
       "type": "n8n-nodes-base.discord",
       "typeVersion": 2,
@@ -237,7 +237,7 @@
       ],
       "credentials": {
         "discordWebhookApi": {
-          "id": "dcCred0000000001",
+          "id": "IfE4dLAybZUX5Tf5",
           "name": "Discord Webhook account"
         }
       },
@@ -255,7 +255,7 @@
           ]
         }
       },
-      "id": "f4bfe113-bd02-594a-919b-904fa23a9d6e",
+      "id": "bb37f042-c225-4739-99bf-05c6abebce4c",
       "name": "Daily 09:00",
       "type": "n8n-nodes-base.scheduleTrigger",
       "typeVersion": 1.2,
@@ -268,7 +268,7 @@
       "parameters": {
         "jsCode": "// daily numbers, then reset\nconst stats = $getWorkflowStaticData('global');\nconst day = stats.day || { checks: {} };\nconst rows = Object.entries(day.checks).map(([name, s]) => {\n  const up = s.total ? (((s.total - s.failed) / s.total) * 100).toFixed(2) : 'n/a';\n  const avg = s.total ? Math.round(s.sumMs / s.total) : 0;\n  return `• **${name}** - uptime ${up}% (${s.total} checks, ${s.failed} failed) · avg ${avg} ms · max ${s.maxMs} ms · ${s.slow} slow (>3 s)`;\n});\nconst content = rows.length\n  ? [`📊 **Daily uptime summary** (since ${String(day.since).slice(0, 16).replace('T', ' ')} UTC)`, ...rows].join('\\n')\n  : '📊 **Daily uptime summary:** no checks recorded yet (static data only persists for active/production executions).';\nstats.day = { since: new Date().toISOString(), checks: {} };\nreturn [{ json: { content } }];"
       },
-      "id": "52c03d73-f59f-5c1a-908c-2d70cce97f80",
+      "id": "9eb65026-dc53-469b-99af-81abbf9ef606",
       "name": "Build Daily Summary",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -284,7 +284,7 @@
         "content": "={{ $json.content }}",
         "options": {}
       },
-      "id": "5e9dce33-dfbc-557b-af74-354c3b93a382",
+      "id": "d029d2b7-1d6f-4808-b563-9b4da654a3dc",
       "name": "Discord: Daily Summary",
       "type": "n8n-nodes-base.discord",
       "typeVersion": 2,
@@ -294,7 +294,7 @@
       ],
       "credentials": {
         "discordWebhookApi": {
-          "id": "dcCred0000000001",
+          "id": "IfE4dLAybZUX5Tf5",
           "name": "Discord Webhook account"
         }
       },
@@ -484,6 +484,6 @@
     "templateCredsSetupCompleted": true,
     "instanceId": "4719ae91fd82c0ccee6f97078541963727157bb55c042897cc43d9cd5d838b37"
   },
-  "id": "UptimeMonitor001",
+  "id": "Cj4VSL0GLMlFEXLn",
   "tags": []
 }

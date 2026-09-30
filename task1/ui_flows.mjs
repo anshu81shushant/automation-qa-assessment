@@ -1,3 +1,5 @@
+// main flows in the browser + axe scan + a few edge cases. writes ui_log.txt and screenshots/
+// needs: npm install (playwright + axe-core), uses the installed Edge
 import { chromium } from 'playwright';
 import fs from 'fs';
 const axe = fs.readFileSync('node_modules/axe-core/axe.min.js','utf8');

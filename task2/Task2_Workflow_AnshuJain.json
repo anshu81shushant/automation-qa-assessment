@@ -12,7 +12,7 @@
           ]
         }
       },
-      "id": "999eeca2-32a7-5582-afb1-40d3cec24b77",
+      "id": "4008497c-0b21-45d3-8a0a-b147d25a47a5",
       "name": "Every Hour",
       "type": "n8n-nodes-base.scheduleTrigger",
       "typeVersion": 1.2,
@@ -28,7 +28,7 @@
         "responseMode": "lastNode",
         "options": {}
       },
-      "id": "6f147776-be44-5cd2-a514-2c9a4c10d5b6",
+      "id": "df8f629f-3dcc-4a61-a51d-522f50a948b1",
       "name": "Webhook (manual run)",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2,
@@ -36,26 +36,26 @@
         0,
         200
       ],
-      "webhookId": "6f1c1f0e-8a57-4f0a-9d3e-5a1b2c3d4e5f"
+      "webhookId": "adea653c-4ccc-48d6-bbc5-a3ba031d71be"
     },
     {
       "parameters": {
         "assignments": {
           "assignments": [
             {
-              "id": "a1",
+              "id": "edc4e65d-a957-4ce8-8b52-32e80e36df2c",
               "name": "topic",
               "type": "string",
               "value": "={{ $json.query?.topic || 'ai-agents' }}"
             },
             {
-              "id": "a2",
+              "id": "f8b0a04d-0479-4097-bea2-a2792ce64238",
               "name": "starThreshold",
               "type": "number",
               "value": "={{ Number($json.query?.threshold) || 500 }}"
             },
             {
-              "id": "a3",
+              "id": "a1ba364d-8210-4f7b-a170-91a4d9abc403",
               "name": "sinceDate",
               "type": "string",
               "value": "={{ $now.minus({ days: 7 }).toFormat('yyyy-MM-dd') }}"
@@ -64,7 +64,7 @@
         },
         "options": {}
       },
-      "id": "82a08ba1-6939-548e-8745-8b1d251f29dc",
+      "id": "42c06399-3453-4b00-af39-85395e4f6eb3",
       "name": "Config",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
@@ -116,7 +116,7 @@
           "timeout": 15000
         }
       },
-      "id": "9584a953-f583-561e-8c56-e9f0fc624cc3",
+      "id": "3af6b84a-f085-4991-b7a1-dbe6c1c73fb9",
       "name": "GitHub: Search New Repos",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -126,7 +126,7 @@
       ],
       "credentials": {
         "githubApi": {
-          "id": "ghCred0000000001",
+          "id": "zKHBgJedTk3GImoL",
           "name": "GitHub account"
         }
       },
@@ -139,7 +139,7 @@
       "parameters": {
         "jsCode": "// skip forks/archived, sort by stars, keep top 5\nconst cfg = $('Config').first().json;\nconst res = $input.first().json;\nconst repos = (res.items || [])\n  .filter(r => !r.fork && !r.archived)\n  .sort((a, b) => b.stargazers_count - a.stargazers_count)\n  .slice(0, 5)\n  .map((r, i) => ({\n    rank: i + 1,\n    name: r.full_name,\n    url: r.html_url,\n    stars: r.stargazers_count,\n    language: r.language || 'n/a',\n    description: (r.description || 'No description').slice(0, 140),\n    createdAt: (r.created_at || '').slice(0, 10),\n    isHot: r.stargazers_count >= cfg.starThreshold,\n  }));\n\nreturn [{ json: {\n  topic: cfg.topic,\n  threshold: cfg.starThreshold,\n  since: cfg.sinceDate,\n  totalFound: res.total_count ?? 0,\n  repos,\n  top: repos[0] || null,\n  topStars: repos[0] ? repos[0].stars : 0,\n  hotCount: repos.filter(r => r.isHot).length,\n} }];"
       },
-      "id": "d5f88eb7-3e09-5350-aabd-aa11494bbbd1",
+      "id": "dd2e29d3-2765-4fce-b04f-2af96d3f9f6f",
       "name": "Pick Top 5",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -159,7 +159,7 @@
           },
           "conditions": [
             {
-              "id": "c1",
+              "id": "e949af82-a589-4272-a087-11752df58c8c",
               "leftValue": "={{ $json.topStars }}",
               "rightValue": "={{ $json.threshold }}",
               "operator": {
@@ -173,7 +173,7 @@
         "looseTypeValidation": true,
         "options": {}
       },
-      "id": "33af1a95-7cb1-5a14-949a-9f7de21e90fa",
+      "id": "fd8377c4-225b-4121-8ae9-688d8ba61fd3",
       "name": "Top repo above threshold?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
@@ -210,7 +210,7 @@
           }
         }
       },
-      "id": "ed04b722-9daf-56d2-a62f-03724cf6ac62",
+      "id": "edf65c69-2076-4de0-ba23-a730e5aff356",
       "name": "GitHub: Fetch README",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -220,7 +220,7 @@
       ],
       "credentials": {
         "githubApi": {
-          "id": "ghCred0000000001",
+          "id": "zKHBgJedTk3GImoL",
           "name": "GitHub account"
         }
       },
@@ -233,7 +233,7 @@
       "parameters": {
         "jsCode": "// README call can fail (continue on fail is on) - still send the digest without it\nconst d = $('Pick Top 5').first().json;\nconst readmeRes = $input.first().json;\nlet summary = '_README unavailable - GitHub call failed, digest sent without it._';\nlet readmeOk = false;\nconst raw = typeof readmeRes.readme === 'string' ? readmeRes.readme : '';\nif (raw && !readmeRes.error) {\n  const para = raw\n    .split(/\\n\\s*\\n/)\n    .map(p => p\n      .replace(/<[^>]+>/g, ' ')                  // html / badges\n      .replace(/!\\[[^\\]]*\\]\\([^)]*\\)/g, ' ')    // markdown images\n      .replace(/\\[([^\\]]*)\\]\\([^)]*\\)/g, '$1')   // links -> text\n      .replace(/[#>*_`|]/g, ' ')\n      .replace(/\\s+/g, ' ')\n      .trim())\n    .find(p => p.length > 60);                   // first actual paragraph\n  if (para) { summary = para.slice(0, 300) + (para.length > 300 ? '...' : ''); readmeOk = true; }\n}\n\nconst line = r => `${r.rank}. ${r.isHot ? '🔥' : '🌱'} **[${r.name}](<${r.url}>)** - ⭐ ${r.stars} · ${r.language}\\n   ${r.description}`;\nlet content = [\n  `☀️ **Morning Brief - new \\`${d.topic}\\` repos since ${d.since}**`,\n  `${d.totalFound} new repos found · ${d.hotCount}/${d.repos.length} above ${d.threshold}⭐`,\n  '',\n  ...d.repos.map(line),\n  '',\n  `📖 **Why #1 matters (${d.top.name}):** ${summary}`,\n].join('\\n');\nif (content.length > 1950) content = content.slice(0, 1947) + '...';   // Discord hard limit is 2000 chars\n\nreturn [{ json: { variant: 'hot', content, repoCount: d.repos.length, readmeOk } }];"
       },
-      "id": "780424b5-e317-54f2-bba5-15e297d26865",
+      "id": "431bccd0-fc2a-43a3-8d7b-20b51d045aed",
       "name": "Build Hot Digest",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -246,7 +246,7 @@
       "parameters": {
         "jsCode": "// nothing above threshold -> just a short note\nconst d = $input.first().json;\nconst lines = d.repos.slice(0, 3).map(r => `• [${r.name}](<${r.url}>) - ⭐ ${r.stars}`);\nconst content = d.repos.length === 0\n  ? `🌙 **Morning Brief:** no new \\`${d.topic}\\` repos since ${d.since}. Nothing to report.`\n  : [`🌙 **Morning Brief - quiet day for \\`${d.topic}\\`**`,\n     `No new repo reached ${d.threshold}⭐ (top: ${d.top.stars}⭐). Rising ones:`,\n     ...lines].join('\\n');\nreturn [{ json: { variant: 'quiet', content, repoCount: d.repos.length } }];"
       },
-      "id": "9c0f1a05-0131-5e63-9561-1611144ddd55",
+      "id": "a36eea7b-51fe-4ee2-a1ee-2c294d055020",
       "name": "Build Quiet Digest",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -262,7 +262,7 @@
         "content": "={{ $json.content }}",
         "options": {}
       },
-      "id": "222c1962-a082-5e3d-b1cf-441fb3aae856",
+      "id": "61a3f58d-29b4-4cad-a614-5cab840d126b",
       "name": "Discord: Send Brief",
       "type": "n8n-nodes-base.discord",
       "typeVersion": 2,
@@ -272,7 +272,7 @@
       ],
       "credentials": {
         "discordWebhookApi": {
-          "id": "dcCred0000000001",
+          "id": "IfE4dLAybZUX5Tf5",
           "name": "Discord Webhook account"
         }
       },
@@ -284,7 +284,7 @@
       "parameters": {
         "jsCode": "// github search failed even after retries -> send something readable to discord\nconst e = $input.first().json.error || $input.first().json;\nconst msg = String(e.message || JSON.stringify(e)).replace(/\\[rn]|\\s+/g, ' ').replace(/\\\\\"/g, '\"').slice(0, 300);\nconst hint = /403|rate limit/i.test(msg) ? 'Likely GitHub rate limit - check the GitHub credential/token.'\n           : /401/.test(msg) ? 'GitHub token invalid or expired - update the credential.'\n           : 'GitHub API unreachable or returned an error.';\nreturn [{ json: {\n  content: `⚠️ **Morning Brief FAILED** at ${$now.toFormat('yyyy-MM-dd HH:mm')}\\n${hint}\\n\\`${msg}\\`\\nThe workflow will retry on the next scheduled run.`,\n  failed: true,\n} }];"
       },
-      "id": "c132a648-a5a8-5163-87e3-b0fe0d8d562c",
+      "id": "a1766d38-3857-49c5-8f90-d51f2ebde4db",
       "name": "Format API Error",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -300,7 +300,7 @@
         "content": "={{ $json.content }}",
         "options": {}
       },
-      "id": "a5cd359e-b629-5702-b5e9-f68828713bc4",
+      "id": "62946a5a-4f67-4950-acac-6aafdb670ef9",
       "name": "Discord: Failure Alert",
       "type": "n8n-nodes-base.discord",
       "typeVersion": 2,
@@ -310,7 +310,7 @@
       ],
       "credentials": {
         "discordWebhookApi": {
-          "id": "dcCred0000000001",
+          "id": "IfE4dLAybZUX5Tf5",
           "name": "Discord Webhook account"
         }
       },
@@ -320,7 +320,7 @@
     },
     {
       "parameters": {},
-      "id": "5a61da07-399a-568d-aa09-92ec697ae223",
+      "id": "63be2d96-c398-4471-8b18-132a8222c219",
       "name": "On Workflow Error",
       "type": "n8n-nodes-base.errorTrigger",
       "typeVersion": 1,
@@ -333,7 +333,7 @@
       "parameters": {
         "jsCode": "// catch-all, needs this workflow set as its own error workflow in settings\nconst x = $input.first().json;\nconst node = x.execution?.lastNodeExecuted || 'unknown node';\nconst msg = (x.execution?.error?.message || 'unknown error').slice(0, 300);\nreturn [{ json: { content: `🚨 **Workflow \"${x.workflow?.name}\" crashed** in node *${node}*\\n\\`${msg}\\`\\nExecution: ${x.execution?.url || 'n/a'}` } }];"
       },
-      "id": "81aa90ae-9568-5a53-bc4a-c5ef027b497f",
+      "id": "3b1c299e-cf4e-49b2-bd01-d24f8705c925",
       "name": "Format Crash Alert",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -349,7 +349,7 @@
         "content": "={{ $json.content }}",
         "options": {}
       },
-      "id": "9824e6a6-000b-5834-9f80-95eec993310d",
+      "id": "713bccdc-3676-4184-867a-f4a3577cbec7",
       "name": "Discord: Crash Alert",
       "type": "n8n-nodes-base.discord",
       "typeVersion": 2,
@@ -359,7 +359,7 @@
       ],
       "credentials": {
         "discordWebhookApi": {
-          "id": "dcCred0000000001",
+          "id": "IfE4dLAybZUX5Tf5",
           "name": "Discord Webhook account"
         }
       },
@@ -527,6 +527,6 @@
     "templateCredsSetupCompleted": true,
     "instanceId": "4719ae91fd82c0ccee6f97078541963727157bb55c042897cc43d9cd5d838b37"
   },
-  "id": "MorningBrief0001",
+  "id": "kujMTWteNnwBB23a",
   "tags": []
 }
