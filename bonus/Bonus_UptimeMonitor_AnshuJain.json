@@ -1,0 +1,483 @@
+{
+  "id": "UptimeMonitor001",
+  "name": "Uptime Monitor - Conduit (RealWorld)",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 5
+            }
+          ]
+        }
+      },
+      "id": "af98176a-1745-56cc-a45d-cd972f66bbcc",
+      "name": "Every 5 Minutes",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// the task 1 app, frontend + api\nreturn [\n  { name: 'Conduit frontend', url: 'https://demo.realworld.show/' },\n  { name: 'Conduit API',      url: 'https://api.realworld.show/api/tags' },\n].map(t => ({ json: t }));"
+      },
+      "id": "05edea31-3918-59b8-a16a-169503d0ce45",
+      "name": "Targets",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        220,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "c34885bf-3ec9-50cf-a1f8-75b3f59da442",
+      "name": "Loop Over Targets",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        440,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "s1",
+              "name": "startedAt",
+              "type": "number",
+              "value": "={{ Date.now() }}"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "id": "d6d6e4a2-f670-5729-a939-d46771ec0d92",
+      "name": "Start Timer",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        660,
+        220
+      ]
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.url }}",
+        "options": {
+          "timeout": 10000,
+          "allowUnauthorizedCerts": false,
+          "response": {
+            "response": {
+              "fullResponse": true,
+              "neverError": true,
+              "responseFormat": "text"
+            }
+          }
+        }
+      },
+      "id": "1812e42b-1956-56ca-861d-cab69ec6985a",
+      "name": "HTTP: Ping",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        880,
+        220
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "// runs once per target inside the loop so the timing is per request\nconst t = $('Start Timer').first().json;\nconst r = $input.first().json;\nreturn [{ json: {\n  name: t.name, url: t.url,\n  status: r.statusCode ?? (r.error ? 0 : 200),   // 0 = network error / timeout\n  ms: Date.now() - t.startedAt,\n  error: r.error ? (r.error.message || String(r.error)).slice(0, 200) : null,\n} }];"
+      },
+      "id": "30a80c17-711b-59f6-ab0b-8bcabc48dfd0",
+      "name": "Measure",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1100,
+        220
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// save counts in static data for the daily summary\nconst SLOW_MS = 3000;\nconst stats = $getWorkflowStaticData('global');\nstats.day = stats.day || { since: new Date().toISOString(), checks: {} };\n\nreturn $input.all().map(item => {\n  const t = item.json;\n  const { status, ms } = t;\n  const ok = status === 200;\n  const s = stats.day.checks[t.name] = stats.day.checks[t.name] || { total: 0, failed: 0, slow: 0, sumMs: 0, maxMs: 0 };\n  s.total++; s.sumMs += ms; s.maxMs = Math.max(s.maxMs, ms);\n  if (!ok) s.failed++;\n  if (ms > SLOW_MS) s.slow++;\n  return { json: { ...t, ok, slow: ms > SLOW_MS } };\n});"
+      },
+      "id": "f4e3f848-cb67-52cf-83db-edaf0cdd7835",
+      "name": "Evaluate & Record",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        660,
+        -100
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "u1",
+              "leftValue": "={{ $json.ok }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "9aa33fd0-8b57-5dbd-822a-d8c99be20195",
+      "name": "Status is 200?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        880,
+        -100
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// only send 'recovered' if we alerted about it being down before\nconst state = $getWorkflowStaticData('global');\nstate.down = state.down || {};\nconst out = [];\nfor (const { json: c } of $input.all()) {\n  if (state.down[c.name]) {\n    const mins = Math.round((Date.now() - state.down[c.name]) / 60000);\n    delete state.down[c.name];\n    out.push({ json: { content: `✅ **RECOVERED:** ${c.name} is back (HTTP ${c.status}, ${c.ms} ms) after ~${mins} min down.\\n<${c.url}>` } });\n  }\n}\nreturn out;"
+      },
+      "id": "c0a02d2b-c153-5a70-abe8-f3d4485e7db6",
+      "name": "Check Recovery",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1100,
+        -220
+      ]
+    },
+    {
+      "parameters": {
+        "amount": 30
+      },
+      "id": "4b04f5e9-7270-5903-b27d-c692914476b8",
+      "name": "Wait 30s",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        1100,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.url }}",
+        "options": {
+          "timeout": 10000,
+          "allowUnauthorizedCerts": false,
+          "response": {
+            "response": {
+              "fullResponse": true,
+              "neverError": true,
+              "responseFormat": "text"
+            }
+          }
+        }
+      },
+      "id": "1e479987-4eb4-5fc9-8074-75b3ff69d3ab",
+      "name": "HTTP: Re-check",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1320,
+        0
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "// second check, 30s later. only alert if still down and we haven't alerted already\nconst state = $getWorkflowStaticData('global');\nstate.down = state.down || {};\nconst first = $('Wait 30s').all();\nconst out = [];\n$input.all().forEach((item, i) => {\n  const f = first[i].json;\n  const r = item.json;\n  const status = r.statusCode ?? (r.error ? 0 : 200);\n  if (status === 200) return;                 // transient blip, recovered on retry\n  if (state.down[f.name]) return;             // already alerted for this outage\n  state.down[f.name] = Date.now();\n  const why = status === 0 ? `no response (${(r.error?.message || 'timeout/network error').slice(0, 120)})` : `HTTP ${status}`;\n  out.push({ json: { content: `🔴 **DOWN:** ${f.name} returned ${why} on 2 checks, 30 s apart.\\nFirst check: HTTP ${f.status} in ${f.ms} ms · <${f.url}>` } });\n});\nreturn out;"
+      },
+      "id": "b5d17f6e-9770-5e43-afaa-a4fa00c20c29",
+      "name": "Confirm Still Down",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1540,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "authentication": "webhook",
+        "operation": "sendLegacy",
+        "content": "={{ $json.content }}",
+        "options": {}
+      },
+      "id": "e6334bb0-7fbc-527f-8d4d-fff9c3a1d040",
+      "name": "Discord: Alert",
+      "type": "n8n-nodes-base.discord",
+      "typeVersion": 2,
+      "position": [
+        1760,
+        -100
+      ],
+      "credentials": {
+        "discordWebhookApi": {
+          "id": "REPLACE_ME",
+          "name": "Discord Webhook account"
+        }
+      },
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "triggerAtHour": 9
+            }
+          ]
+        }
+      },
+      "id": "f4bfe113-bd02-594a-919b-904fa23a9d6e",
+      "name": "Daily 09:00",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        440
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// daily numbers, then reset\nconst stats = $getWorkflowStaticData('global');\nconst day = stats.day || { checks: {} };\nconst rows = Object.entries(day.checks).map(([name, s]) => {\n  const up = s.total ? (((s.total - s.failed) / s.total) * 100).toFixed(2) : 'n/a';\n  const avg = s.total ? Math.round(s.sumMs / s.total) : 0;\n  return `• **${name}** - uptime ${up}% (${s.total} checks, ${s.failed} failed) · avg ${avg} ms · max ${s.maxMs} ms · ${s.slow} slow (>3 s)`;\n});\nconst content = rows.length\n  ? [`📊 **Daily uptime summary** (since ${String(day.since).slice(0, 16).replace('T', ' ')} UTC)`, ...rows].join('\\n')\n  : '📊 **Daily uptime summary:** no checks recorded yet (static data only persists for active/production executions).';\nstats.day = { since: new Date().toISOString(), checks: {} };\nreturn [{ json: { content } }];"
+      },
+      "id": "52c03d73-f59f-5c1a-908c-2d70cce97f80",
+      "name": "Build Daily Summary",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        220,
+        440
+      ]
+    },
+    {
+      "parameters": {
+        "authentication": "webhook",
+        "operation": "sendLegacy",
+        "content": "={{ $json.content }}",
+        "options": {}
+      },
+      "id": "5e9dce33-dfbc-557b-af74-354c3b93a382",
+      "name": "Discord: Daily Summary",
+      "type": "n8n-nodes-base.discord",
+      "typeVersion": 2,
+      "position": [
+        440,
+        440
+      ],
+      "credentials": {
+        "discordWebhookApi": {
+          "id": "REPLACE_ME",
+          "name": "Discord Webhook account"
+        }
+      },
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000
+    }
+  ],
+  "connections": {
+    "Every 5 Minutes": {
+      "main": [
+        [
+          {
+            "node": "Targets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Targets": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Targets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Targets": {
+      "main": [
+        [
+          {
+            "node": "Evaluate & Record",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Start Timer",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Start Timer": {
+      "main": [
+        [
+          {
+            "node": "HTTP: Ping",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP: Ping": {
+      "main": [
+        [
+          {
+            "node": "Measure",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Measure": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Targets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Evaluate & Record": {
+      "main": [
+        [
+          {
+            "node": "Status is 200?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Status is 200?": {
+      "main": [
+        [
+          {
+            "node": "Check Recovery",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Wait 30s",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait 30s": {
+      "main": [
+        [
+          {
+            "node": "HTTP: Re-check",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP: Re-check": {
+      "main": [
+        [
+          {
+            "node": "Confirm Still Down",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Recovery": {
+      "main": [
+        [
+          {
+            "node": "Discord: Alert",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Confirm Still Down": {
+      "main": [
+        [
+          {
+            "node": "Discord: Alert",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Daily 09:00": {
+      "main": [
+        [
+          {
+            "node": "Build Daily Summary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Daily Summary": {
+      "main": [
+        [
+          {
+            "node": "Discord: Daily Summary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "Asia/Kolkata"
+  },
+  "pinData": {}
+}
