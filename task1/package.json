@@ -1,0 +1,17 @@
+{
+  "name": "task1-qa-scripts",
+  "version": "1.0.0",
+  "description": "Playwright + axe-core scripts used for the Task 1 QA report",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "axe-core": "^4.13.0",
+    "playwright": "^1.63.0"
+  }
+}

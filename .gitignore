@@ -1,0 +1,5 @@
+node_modules/
+__pycache__/
+n8n-local/
+LOOM_TALKING_POINTS.md
+_local/
