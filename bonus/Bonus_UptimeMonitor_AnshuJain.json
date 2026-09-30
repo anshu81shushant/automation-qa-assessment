@@ -1,5 +1,4 @@
 {
-  "id": "UptimeMonitor001",
   "name": "Uptime Monitor - Conduit (RealWorld)",
   "nodes": [
     {
@@ -238,7 +237,7 @@
       ],
       "credentials": {
         "discordWebhookApi": {
-          "id": "REPLACE_ME",
+          "id": "dcCred0000000001",
           "name": "Discord Webhook account"
         }
       },
@@ -295,7 +294,7 @@
       ],
       "credentials": {
         "discordWebhookApi": {
-          "id": "REPLACE_ME",
+          "id": "dcCred0000000001",
           "name": "Discord Webhook account"
         }
       },
@@ -304,6 +303,7 @@
       "waitBetweenTries": 3000
     }
   ],
+  "pinData": {},
   "connections": {
     "Every 5 Minutes": {
       "main": [
@@ -479,5 +479,11 @@
     "executionOrder": "v1",
     "timezone": "Asia/Kolkata"
   },
-  "pinData": {}
+  "versionId": "38c53e27-d30f-4125-a04c-a11c220eedfd",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "4719ae91fd82c0ccee6f97078541963727157bb55c042897cc43d9cd5d838b37"
+  },
+  "id": "UptimeMonitor001",
+  "tags": []
 }

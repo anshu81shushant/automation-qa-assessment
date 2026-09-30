@@ -1,5 +1,4 @@
 {
-  "id": "MorningBrief0001",
   "name": "Morning Brief - GitHub trending to Discord",
   "nodes": [
     {
@@ -127,7 +126,7 @@
       ],
       "credentials": {
         "githubApi": {
-          "id": "REPLACE_ME",
+          "id": "ghCred0000000001",
           "name": "GitHub account"
         }
       },
@@ -221,7 +220,7 @@
       ],
       "credentials": {
         "githubApi": {
-          "id": "REPLACE_ME",
+          "id": "ghCred0000000001",
           "name": "GitHub account"
         }
       },
@@ -273,7 +272,7 @@
       ],
       "credentials": {
         "discordWebhookApi": {
-          "id": "REPLACE_ME",
+          "id": "dcCred0000000001",
           "name": "Discord Webhook account"
         }
       },
@@ -311,7 +310,7 @@
       ],
       "credentials": {
         "discordWebhookApi": {
-          "id": "REPLACE_ME",
+          "id": "dcCred0000000001",
           "name": "Discord Webhook account"
         }
       },
@@ -360,7 +359,7 @@
       ],
       "credentials": {
         "discordWebhookApi": {
-          "id": "REPLACE_ME",
+          "id": "dcCred0000000001",
           "name": "Discord Webhook account"
         }
       },
@@ -369,6 +368,7 @@
       "waitBetweenTries": 3000
     }
   ],
+  "pinData": {},
   "connections": {
     "Every Hour": {
       "main": [
@@ -522,5 +522,11 @@
     "executionOrder": "v1",
     "timezone": "Asia/Kolkata"
   },
-  "pinData": {}
+  "versionId": "e69a10ba-629a-41bf-b0d6-e83a042bcb6a",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "4719ae91fd82c0ccee6f97078541963727157bb55c042897cc43d9cd5d838b37"
+  },
+  "id": "MorningBrief0001",
+  "tags": []
 }
